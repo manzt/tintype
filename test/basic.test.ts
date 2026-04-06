@@ -31,10 +31,8 @@ test("generics", () => {
   function identity<T>(x: T): T {
     return x;
   }
-  expectType(identity(42)).toMatchInlineSnapshot(`(local function) identity<42>(x: 42): 42`);
-  expectType(identity("hi")).toMatchInlineSnapshot(
-    `(local function) identity<"hi">(x: "hi"): "hi"`,
-  );
+  expectType(identity(42)).toMatchInlineSnapshot(`42`);
+  expectType(identity("hi")).toMatchInlineSnapshot(`"hi"`);
 });
 
 test("union types", () => {
@@ -53,4 +51,31 @@ test("mapped types", () => {
   type Readonly<T> = { readonly [K in keyof T]: T[K] };
   const obj: Readonly<{ a: number; b: string }> = { a: 1, b: "x" };
   expectType(obj).toMatchInlineSnapshot(`Readonly<{ a: number; b: string; }>`);
+});
+
+test("property access", () => {
+  const obj = { name: "alice" as const, age: 30 };
+  expectType(obj.name).toMatchInlineSnapshot(`"alice"`);
+  expectType(obj.age).toMatchInlineSnapshot(`number`);
+});
+
+test("method return type", () => {
+  const arr = [1, 2, 3];
+  expectType(arr.map((x) => String(x))).toMatchInlineSnapshot(`string[]`);
+});
+
+test("type guard narrowing on property", () => {
+  class Box<T> {
+    constructor(public value: T) {}
+    is(check: "string"): this is Box<string>;
+    is(check: "number"): this is Box<number>;
+    is(check: string): boolean {
+      return typeof this.value === check;
+    }
+  }
+  const box = new Box<string | number>("hello");
+  expectType(box.value).toMatchInlineSnapshot(`string | number`);
+  if (box.is("string")) {
+    expectType(box.value).toMatchInlineSnapshot(`string`);
+  }
 });
