@@ -58,22 +58,42 @@ function createLanguageService(compilerOptions: ts.CompilerOptions): LanguageSer
   });
 }
 
-function getTypeAtPosition(service: ts.LanguageService, fileName: string, offset: number): string {
-  const info = service.getQuickInfoAtPosition(fileName, offset);
-  if (!info?.displayParts) return "unknown";
+function getTypeAtPosition(service: ts.LanguageService, fileName: string, node: ts.Node): string {
+  const program = service.getProgram();
+  if (!program) return "unknown";
+  const checker = program.getTypeChecker();
+  const sourceFile = program.getSourceFile(fileName);
+  if (!sourceFile) return "unknown";
 
-  return (
-    info.displayParts
-      .map((p) => p.text)
-      .join("")
-      // Strip declaration prefix
-      .replace(/^(const|let|var|function|type) \w+: /, "")
-      .replace(/^\(property\) .*?: /, "")
-      .replace(/^\(method\) /, "")
-      // Collapse TS language service whitespace to single spaces
-      .replace(/\n\s*/g, " ")
-      .trim()
+  // Re-resolve the node in the program's source file at the same position
+  const target = findNodeAtPosition(sourceFile, node.getStart(), node.getEnd());
+  if (!target) return "unknown";
+
+  const type = checker.getTypeAtLocation(target);
+  return checker.typeToString(
+    type,
+    target,
+    ts.TypeFormatFlags.NoTruncation | ts.TypeFormatFlags.UseAliasDefinedOutsideCurrentScope,
   );
+}
+
+function findNodeAtPosition(
+  sourceFile: ts.SourceFile,
+  start: number,
+  end: number,
+): ts.Node | undefined {
+  let result: ts.Node | undefined;
+  function visit(node: ts.Node) {
+    if (node.getStart() === start && node.getEnd() === end) {
+      result = node;
+      return;
+    }
+    if (node.getStart() <= start && node.getEnd() >= end) {
+      ts.forEachChild(node, visit);
+    }
+  }
+  visit(sourceFile);
+  return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -188,7 +208,7 @@ export default function tintype(options?: TypeSnapshotsOptions): Plugin {
       }
 
       for (const { node, arg } of calls) {
-        const resolvedType = getTypeAtPosition(svc, id, arg.getStart());
+        const resolvedType = getTypeAtPosition(svc, id, arg);
         const json = JSON.stringify(resolvedType);
         s.overwrite(node.getStart(), node.getEnd(), `expect({ [Symbol.for("tintype")]: ${json} })`);
       }
