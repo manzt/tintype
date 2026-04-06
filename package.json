@@ -1,0 +1,43 @@
+{
+  "name": "tintype",
+  "version": "0.0.0",
+  "description": "Inline type snapshot testing for vitest",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./plugin": {
+      "types": "./dist/plugin.d.ts",
+      "import": "./dist/plugin.js"
+    },
+    "./setup": {
+      "types": "./dist/setup.d.ts",
+      "import": "./dist/setup.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vp test run",
+    "check": "vp check",
+    "fix": "vp fmt && vp check --fix"
+  },
+  "dependencies": {
+    "magic-string": "^0.30.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0",
+    "vitest": ">=2.0.0"
+  },
+  "packageManager": "pnpm@10.33.0"
+}
