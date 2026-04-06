@@ -27,7 +27,7 @@ jobs:
           cache: true
       - run: vp check
       - run: vp test
-      - run: vp build
+      - run: vp run build
       - run: vp dlx publint
 
       - name: Bump version
