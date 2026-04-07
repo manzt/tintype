@@ -31,9 +31,11 @@
     "magic-string": "^0.30.0"
   },
   "devDependencies": {
+    "@types/node": "^25.5.2",
     "typescript": "^5.7.0",
     "vite-plus": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "zod": "^4.3.6"
   },
   "peerDependencies": {
     "typescript": ">=5.0.0",
