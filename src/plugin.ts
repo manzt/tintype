@@ -42,6 +42,7 @@ function createLanguageService(compilerOptions: ts.CompilerOptions): LanguageSer
     readDirectory: ts.sys.readDirectory.bind(ts.sys),
     directoryExists: ts.sys.directoryExists.bind(ts.sys),
     getDirectories: ts.sys.getDirectories.bind(ts.sys),
+    realpath: ts.sys.realpath?.bind(ts.sys),
   };
 
   const service = ts.createLanguageService(host, ts.createDocumentRegistry());
@@ -65,7 +66,6 @@ function getTypeAtPosition(service: ts.LanguageService, fileName: string, node: 
   const sourceFile = program.getSourceFile(fileName);
   if (!sourceFile) return "unknown";
 
-  // Re-resolve the node in the program's source file at the same position
   const target = findNodeAtPosition(sourceFile, node.getStart(), node.getEnd());
   if (!target) return "unknown";
 
