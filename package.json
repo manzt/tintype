@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "description": "Inline type snapshot testing for vitest",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/manzt/tintype"
+  },
   "files": [
     "dist"
   ],
