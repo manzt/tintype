@@ -62,6 +62,8 @@ jobs:
           node --experimental-strip-types scripts/generate-release-notes.ts
           "${{ steps.prev.outputs.version }}" "${{ steps.version.outputs.version }}"
           > release_notes.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub release
         run: gh release create "${{ steps.version.outputs.version }}" -F release_notes.md
