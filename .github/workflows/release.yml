@@ -25,6 +25,9 @@ jobs:
       - uses: voidzero-dev/setup-vp@v1
         with:
           cache: true
+      - uses: actions/setup-node@v6
+        with:
+          registry-url: https://registry.npmjs.org/
       - run: vp check
       - run: vp test
       - run: vp run build
@@ -41,7 +44,9 @@ jobs:
         id: version
         run: echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
 
-      - run: vp pm publish --provenance --access public
+      - run: vp pm publish --access public
+        env:
+          NPM_CONFIG_PROVENANCE: true
 
       - name: Commit and tag
         run: |
