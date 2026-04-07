@@ -31,7 +31,7 @@ jobs:
       - run: vp dlx publint
 
       - name: Bump version
-        run: vp pm version ${{ inputs.bump }} --no-git-tag-version
+        run: npm version ${{ inputs.bump }} --no-git-tag-version
 
       - name: Get version
         id: version
