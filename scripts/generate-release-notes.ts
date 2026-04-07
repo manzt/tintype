@@ -72,7 +72,7 @@ function getMergedPRs(limit = 100): Map<number, PullRequest> {
 }
 
 function isVersionCommit(commit: Commit): boolean {
-  return /^v\d+\.\d+\.\d+/.test(commit.message);
+  return /^v?\d+\.\d+\.\d+/.test(commit.message);
 }
 
 function stripConventionalPrefix(title: string): string {
