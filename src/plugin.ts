@@ -11,6 +11,7 @@
  */
 
 import type { Plugin } from "vitest/config";
+import * as NodeChildProcess from "node:child_process";
 import ts from "typescript";
 import MagicString from "magic-string";
 
@@ -61,13 +62,20 @@ function createLanguageService(compilerOptions: ts.CompilerOptions): LanguageSer
 
 function getTypeAtPosition(service: ts.LanguageService, fileName: string, node: ts.Node): string {
   const program = service.getProgram();
-  if (!program) return "unknown";
+  if (!program) {
+    return "unknown";
+  }
+
   const checker = program.getTypeChecker();
   const sourceFile = program.getSourceFile(fileName);
-  if (!sourceFile) return "unknown";
+  if (!sourceFile) {
+    return "unknown";
+  }
 
   const target = findNodeAtPosition(sourceFile, node.getStart(), node.getEnd());
-  if (!target) return "unknown";
+  if (!target) {
+    return "unknown";
+  }
 
   const type = checker.getTypeAtLocation(target);
   return checker.typeToString(
@@ -141,6 +149,25 @@ function findExpectTypeCalls(
 export interface TypeSnapshotsOptions {
   /** Path to tsconfig.json. Auto-detected if not provided. */
   tsconfig?: string;
+  /**
+   * Shell command to format the resolved type string.
+   *
+   * The type is wrapped as `type __tintype__ = <type>;` and piped to
+   * the command via stdin. The command should write the formatted result
+   * to stdout. Use `{filename}` as a placeholder for the source file path.
+   *
+   * @example "prettier --parser typescript"
+   * @example "biome format --stdin-file-path {filename}"
+   */
+  formatCommand?: string;
+}
+
+function formatType(typeStr: string, command: string, filename: string): string {
+  const wrapped = `type __tintype__ = ${typeStr};\n`;
+  const cmd = command.replaceAll("{filename}", filename);
+  const result = NodeChildProcess.execSync(cmd, { input: wrapped, encoding: "utf-8" });
+  const match = result.match(/^type\s+__tintype__\s*=\s*([\s\S]*?)\s*;\s*$/);
+  return match ? match[1] : typeStr;
 }
 
 function loadCompilerOptions(tsconfigPath?: string): ts.CompilerOptions {
@@ -208,7 +235,10 @@ export default function tintype(options?: TypeSnapshotsOptions): Plugin {
       }
 
       for (const { node, arg } of calls) {
-        const resolvedType = getTypeAtPosition(svc, id, arg);
+        let resolvedType = getTypeAtPosition(svc, id, arg);
+        if (options?.formatCommand) {
+          resolvedType = formatType(resolvedType, options.formatCommand, id);
+        }
         const json = JSON.stringify(resolvedType);
         s.overwrite(node.getStart(), node.getEnd(), `expect({ [Symbol.for("tintype")]: ${json} })`);
       }
