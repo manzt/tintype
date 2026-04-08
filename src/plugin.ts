@@ -31,7 +31,9 @@ function createLanguageService(compilerOptions: ts.CompilerOptions): LanguageSer
     getScriptVersion: (fileName) => String(files.get(fileName)?.version ?? 0),
     getScriptSnapshot(fileName) {
       const file = files.get(fileName);
-      if (file) return ts.ScriptSnapshot.fromString(file.content);
+      if (file) {
+        return ts.ScriptSnapshot.fromString(file.content);
+      }
       const content = ts.sys.readFile(fileName);
       return content ? ts.ScriptSnapshot.fromString(content) : undefined;
     },
@@ -162,12 +164,19 @@ export interface TypeSnapshotsOptions {
   formatCommand?: string;
 }
 
-function formatType(typeStr: string, command: string, filename: string): string {
-  const wrapped = `type __tintype__ = ${typeStr};\n`;
+function formatTypes(types: string[], command: string, filename: string): string[] {
+  const pad = String(types.length - 1).length;
+  const input =
+    types.map((t, i) => `type __tintype_${String(i).padStart(pad, "0")}__ = ${t};`).join("\n") +
+    "\n";
   const cmd = command.replaceAll("{filename}", filename);
-  const result = NodeChildProcess.execSync(cmd, { input: wrapped, encoding: "utf-8" });
-  const match = result.match(/^type\s+__tintype__\s*=\s*([\s\S]*?)\s*;\s*$/);
-  return match ? match[1] : typeStr;
+  const stdout = NodeChildProcess.execSync(cmd, { input, encoding: "utf-8" });
+  const re = /type\s+__tintype_(\d+)__\s*=\s*([\s\S]*?)\s*;\s*(?=type\s+__tintype_\d+__|$)/g;
+  const formatted: Array<string> = Array.from({ length: types.length });
+  for (let m; (m = re.exec(stdout)); ) {
+    formatted[Number(m[1])] = m[2];
+  }
+  return types.map((t, i) => formatted[i] ?? t);
 }
 
 function loadCompilerOptions(tsconfigPath?: string): ts.CompilerOptions {
@@ -201,7 +210,9 @@ export default function tintype(options?: TypeSnapshotsOptions): Plugin {
   let service: LanguageServiceWithAdd | null = null;
 
   function getService(): LanguageServiceWithAdd {
-    if (service) return service;
+    if (service) {
+      return service;
+    }
     const compilerOptions = loadCompilerOptions(options?.tsconfig);
     service = createLanguageService(compilerOptions);
     return service;
@@ -212,11 +223,15 @@ export default function tintype(options?: TypeSnapshotsOptions): Plugin {
     enforce: "pre",
 
     transform(code, id) {
-      if (!code.includes("expectType")) return;
+      if (!code.includes("expectType")) {
+        return;
+      }
 
       const sourceFile = ts.createSourceFile(id, code, ts.ScriptTarget.Latest, true);
       const calls = findExpectTypeCalls(sourceFile);
-      if (calls.length === 0) return;
+      if (calls.length === 0) {
+        return;
+      }
 
       const svc = getService();
       svc.addFile(id, code);
@@ -234,12 +249,14 @@ export default function tintype(options?: TypeSnapshotsOptions): Plugin {
         s.prepend('import { expect } from "vitest";\n');
       }
 
-      for (const { node, arg } of calls) {
-        let resolvedType = getTypeAtPosition(svc, id, arg);
-        if (options?.formatCommand) {
-          resolvedType = formatType(resolvedType, options.formatCommand, id);
-        }
-        const json = JSON.stringify(resolvedType);
+      let resolvedTypes = calls.map(({ arg }) => getTypeAtPosition(svc, id, arg));
+      if (options?.formatCommand) {
+        resolvedTypes = formatTypes(resolvedTypes, options.formatCommand, id);
+      }
+
+      for (let i = 0; i < calls.length; i++) {
+        const { node } = calls[i];
+        const json = JSON.stringify(resolvedTypes[i]);
         s.overwrite(node.getStart(), node.getEnd(), `expect({ [Symbol.for("tintype")]: ${json} })`);
       }
 
