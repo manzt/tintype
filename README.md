@@ -81,12 +81,16 @@ ever changes, the snapshot drifts and the test fails.
 ## options
 
 ```ts
-tintype({ tsconfig: "./tsconfig.test.json" });
+tintype({
+  tsconfig: "./tsconfig.test.json",
+  formatCommand: "prettier --parser typescript",
+});
 ```
 
-| option     | default       | description                                 |
-| ---------- | ------------- | ------------------------------------------- |
-| `tsconfig` | auto-detected | Path to `tsconfig.json` for type resolution |
+| option          | default       | description                                                                                                                                         |
+| --------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tsconfig`      | auto-detected | Path to `tsconfig.json` for type resolution                                                                                                         |
+| `formatCommand` | none          | Shell command to format type strings. Each type is wrapped as `type __tintype__ = <type>;` and piped via stdin. Use `{filename}` for the file path. |
 
 ## motivation
 
