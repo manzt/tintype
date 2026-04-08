@@ -1,6 +1,6 @@
 {
   "name": "tintype",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Inline type snapshot testing for vitest",
   "license": "MIT",
   "repository": {
