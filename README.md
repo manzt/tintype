@@ -117,6 +117,11 @@ vp test          # run tests
 vp run build     # build with tsc
 ```
 
+## acknowledgements
+
+The logo was vectorized from a hand drawing using
+[sketch-vectorization](https://github.com/rambip/sketch-vectorization).
+
 ## license
 
 MIT
