@@ -12,7 +12,7 @@
 inferred TypeScript types. It piggybacks on
 [`toMatchInlineSnapshot`](https://vitest.dev/api/expect.html#tomatchinlinesnapshot),
 but rather than snapshotting the value, it injects the inferred type from
-TypeScript's language service.
+the TypeScript checker.
 
 ## install
 
@@ -102,10 +102,16 @@ types actually infer — or don't. tintype lets you write a test, run `--update`
 and get a snapshot of exactly what TypeScript thinks. When inference breaks or
 drifts, you see it in the diff.
 
-At transform time, tintype finds `expectType(expr)` calls and uses TypeScript's
-language service to resolve the type of `expr`. It rewrites the call to a plain
-`expect` with the resolved type string, so vitest's snapshot machinery takes
-over from there.
+At transform time, tintype finds `expectType(expr)` calls and uses the
+TypeScript checker to resolve the type of `expr`. It rewrites the call to a
+plain `expect` with the resolved type string, so vitest's snapshot machinery
+takes over from there.
+
+Both TypeScript API generations are supported, chosen by the installed
+`typescript` version: 5.x/6.x uses the classic language service, and 7+ uses
+the native (Go) implementation's `typescript/unstable/*` API. Type printing
+can differ between the two (e.g. union member ordering), so expect a one-time
+`--update` when crossing that boundary.
 
 ## development
 
